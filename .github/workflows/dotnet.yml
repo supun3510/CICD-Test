@@ -1,0 +1,30 @@
+image: mcr.microsoft.com/dotnet/sdk:6.0
+
+pipelines:
+  pull-requests:
+    feature/*:
+      - step:
+          name: Build & Test
+          caches:
+            - dotnetcore
+          script:
+            - export SOLUTION_PATH=./source/EzJob.ServiceProvider.sln
+            - export CONFIGURATION=Release
+            - REPORTS_PATH=./test-reports/build_${BITBUCKET_BUILD_NUMBER}
+            - dotnet restore ${SOLUTION_PATH}
+            - dotnet build --no-restore  ${SOLUTION_PATH} --configuration ${CONFIGURATION}
+            - dotnet test --no-build   ${SOLUTION_PATH} --configuration ${CONFIGURATION} --test-adapter-path:. --logger:"junit;LogFilePath=$REPORTS_PATH/junit.xml"   
+  branches:
+    develop:
+      - step:
+          name: Build, Test and Publish QA artifacts
+          caches:
+            - dotnetcore
+          script:
+            - export SOLUTION_PATH=./source/EzJob.ServiceProvider.sln
+            - export CONFIGURATION=Release
+            - REPORTS_PATH=./test-reports/build_${BITBUCKET_BUILD_NUMBER}
+            - dotnet restore ${SOLUTION_PATH}
+            - dotnet build --no-restore  ${SOLUTION_PATH} --configuration ${CONFIGURATION}
+            - dotnet test --no-build   ${SOLUTION_PATH} --configuration ${CONFIGURATION} --test-adapter-path:. --logger:"junit;LogFilePath=$REPORTS_PATH/junit.xml"
+            - dotnet publish --configuration ${CONFIGURATION} --no-build ${SOLUTION_PATH} -o publish/qa -p:EnvironmentName=Development
